@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Radios Belgique &amp; France</title>
+<style>
+:root{--bg:#f6f5f2;--card:#fff;--tx:#1b1b1f;--mu:#6b6b76;--ac:#e5334b;--bd:#e4e2dc;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121216;--card:#1d1d23;--tx:#f1f1f4;--mu:#9a9aa6;--bd:#2c2c35}}
+:root[data-theme="dark"]{--bg:#121216;--card:#1d1d23;--tx:#f1f1f4;--mu:#9a9aa6;--bd:#2c2c35}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:110px}
+header{padding:18px 16px 8px;max-width:760px;margin:auto}
+h1{margin:0;font-size:22px}h1 span{color:var(--ac)}
+nav{display:flex;gap:6px;padding:8px 16px;max-width:760px;margin:auto}
+nav button,.chip{border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:9px 14px;border-radius:99px;font-size:14px;cursor:pointer}
+nav button.on,.chip.on{background:var(--ac);border-color:var(--ac);color:#fff}
+main{max-width:760px;margin:auto;padding:4px 16px}
+input[type=search]{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--bd);background:var(--card);color:var(--tx);font-size:16px;margin:6px 0 10px}
+.row{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.item.cur{border-color:var(--ac)}
+.cov{width:46px;height:46px;border-radius:8px;background:var(--bd);flex:none;object-fit:cover;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--mu);font-size:13px}
+.inf{flex:1;min-width:0}.inf b,.inf small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.inf small{color:var(--mu);font-size:13px}
+.ib{border:0;background:none;color:var(--tx);font-size:22px;cursor:pointer;padding:6px}
+.ib.liked{color:var(--ac)}
+.msg{color:var(--mu);text-align:center;padding:24px 8px;font-size:15px}
+a{color:var(--ac)}
+#bar{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--bd);padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:12px}
+#bar .inf{max-width:760px}
+#pp{width:46px;height:46px;border-radius:50%;border:0;background:var(--ac);color:#fff;font-size:18px;cursor:pointer;flex:none}
+#vol{width:80px}
+.hide{display:none}
+#vp{position:sticky;top:0;z-index:5;background:var(--bg);max-width:760px;margin:auto;padding:8px 16px}
+#vf{width:100%;aspect-ratio:16/9;border:0;border-radius:12px;background:#000}
+#vx{margin-top:6px;border:1px solid var(--bd);background:var(--card);color:var(--tx);padding:6px 12px;border-radius:99px;font-size:13px;cursor:pointer}
+.note{color:var(--mu);font-size:13px;margin:0 0 8px}
+</style>
+</head>
+<body>
+<header><h1>📻 Radios <span>BE · FR</span></h1></header>
+<nav>
+  <button data-t="radios" class="on">Radios</button>
+  <button data-t="search">Musique</button>
+  <button data-t="likes">♥ Likés <span id="cnt"></span></button>
+</nav>
+<div id="vp" class="hide"><div id="vf"></div><button id="vx">✕ Fermer le lecteur</button> <a id="vl" class="note" target="_blank" rel="noopener" href="#">Vidéo en erreur ? Ouvrir sur YouTube</a></div>
+<main>
+  <section id="radios">
+    <input type="search" id="rq" placeholder="Rechercher une radio…">
+    <div class="row" id="flt"></div>
+    <div id="rl"></div>
+  </section>
+  <section id="search" class="hide">
+    <input type="search" id="sq" placeholder="Titre, artiste… puis Entrée">
+    <p class="note"><span id="ko"></span> <a href="#" id="kr" class="hide">Réinitialiser</a></p>
+    <details class="note" id="ykd"><summary>⚙️ Clé YouTube</summary>
+      <div id="ytb"><input type="password" id="yk" placeholder="Clé API YouTube Data v3 (AIza…)"></div>
+    </details>
+    <div id="sl"><div class="msg">Cherche un titre ou un artiste pour l’écouter ici.</div></div>
+  </section>
+  <section id="likes" class="hide"><div id="ll"></div></section>
+</main>
+<div id="bar">
+  <button id="pp" aria-label="Lecture">▶</button>
+  <div class="inf"><b id="bt">Choisis une radio</b><small id="bs">Prêt</small></div>
+  <input type="range" id="vol" min="0" max="1" step="0.05" value="0.8" aria-label="Volume">
+</div>
+<audio id="au" preload="none"></audio>
+<script>
+const R=[
+["France Inter","FR","Généraliste","https://icecast.radiofrance.fr/franceinter-midfi.mp3"],
+["franceinfo","FR","Info","https://icecast.radiofrance.fr/franceinfo-midfi.mp3"],
+["France Culture","FR","Culture","https://icecast.radiofrance.fr/franceculture-midfi.mp3"],
+["France Musique","FR","Classique","https://icecast.radiofrance.fr/francemusique-midfi.mp3"],
+["FIP","FR","Éclectique","https://icecast.radiofrance.fr/fip-midfi.mp3"],
+["Mouv’","FR","Hip-hop","https://icecast.radiofrance.fr/mouv-midfi.mp3"],
+["NRJ","FR","Hits","https://scdn.nrjaudio.fm/adwz1/fr/30001/mp3_128.mp3"],
+["Nostalgie","FR","Souvenirs","https://scdn.nrjaudio.fm/adwz1/fr/30601/mp3_128.mp3"],
+["Chérie FM","FR","Pop","https://scdn.nrjaudio.fm/adwz1/fr/30201/mp3_128.mp3"],
+["Rire & Chansons","FR","Humour","https://scdn.nrjaudio.fm/adwz1/fr/30401/mp3_128.mp3"],
+["RTL","FR","Généraliste","https://streamer-03.rtl.fr/rtl-1-44-128"],
+["Fun Radio","FR","Dance","https://streamer-03.rtl.fr/fun-1-44-128"],
+["RMC","FR","Info/Sport","https://audio.bfmtv.com/rmcradio_128.mp3"],
+["Europe 1","FR","Généraliste","https://stream.europe1.fr/europe1.mp3"],
+["Skyrock","FR","Rap/R&B","https://icecast.skyrock.net/s/natio_mp3_128k"],
+["Bel RTL","BE","Généraliste","https://belrtl.ice.infomaniak.ch/belrtl-mp3-128.mp3"],
+["Radio Contact","BE","Hits","https://radiocontact.ice.infomaniak.ch/radiocontact-mp3-128.mp3"],
+["Mint","BE","Hits","https://mint.ice.infomaniak.ch/mint-mp3-128.mp3"],
+["Nostalgie Belgique","BE","Souvenirs","https://nostalgiewallonie.ice.infomaniak.ch/nostalgiewallonie-128.mp3"],
+["VivaCité","BE","Généraliste","https://radios.rtbf.be/vivacite-128.mp3"],
+["La Première","BE","Info","https://radios.rtbf.be/laprem1ere-128.mp3"],
+["Classic 21","BE","Rock","https://radios.rtbf.be/classic21-128.mp3"],
+["Tipik","BE","Éclectique","https://radios.rtbf.be/tipik-128.mp3"],
+["Pure FM","BE","Pop","https://radios.rtbf.be/pure-128.mp3"],
+["Musiq’3","BE","Classique","https://radios.rtbf.be/musiq3-128.mp3"],
+["Tarmac","BE","Urbain","https://radios.rtbf.be/tarmac-128.mp3"],
+["Studio Brussel","BE","Alternatif","https://icecast.vrtcdn.be/stubru-high.mp3"],
+["MNM","BE","Pop","https://icecast.vrtcdn.be/mnm-high.mp3"],
+["Radio 1","BE","Info (NL)","https://icecast.vrtcdn.be/radio1-high.mp3"],
+["Radio 2","BE","Généraliste (NL)","https://icecast.vrtcdn.be/ra2ovl-high.mp3"],
+["Klara","BE","Classique (NL)","https://icecast.vrtcdn.be/klara-high.mp3"]
+];
+const $=s=>document.querySelector(s),au=$("#au");
+const SEED=R.map(r=>({id:"r:"+r[0],name:r[0],cc:r[1],tag:r[2],urls:[r[3]]}));
+let grp="ALL",cur=null,likes=[],favs=[],ST=SEED;
+try{likes=JSON.parse(localStorage.getItem("likes")||"[]")}catch(e){}
+try{favs=JSON.parse(localStorage.getItem("favs2")||"[]")}catch(e){}
+const save=()=>{try{localStorage.setItem("likes",JSON.stringify(likes))}catch(e){}$("#cnt").textContent=likes.length?"("+likes.length+")":""};
+const saveFav=()=>{try{localStorage.setItem("favs2",JSON.stringify(favs))}catch(e){}};
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+const GR={ALL:()=>true,FAV:()=>true,FR:s=>s.cc==="FR",BE:s=>s.cc==="BE",TL:s=>/tomorrowland|one world radio/i.test(s.name),NRJ:s=>/nrj/i.test(s.name)};
+
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));
+  ["radios","search","likes"].forEach(i=>$("#"+i).classList.toggle("hide",i!==b.dataset.t));
+  if(b.dataset.t==="likes")drawLikes();
+});
+[["ALL","Toutes"],["FAV","★ Favoris"],["FR","🇫🇷 France"],["BE","🇧🇪 Belgique"],["TL","🎪 Tomorrowland"],["NRJ","NRJ"]].forEach(([k,l])=>{
+  const c=el("button","chip"+(k==="ALL"?" on":""),l);
+  c.onclick=()=>{grp=k;document.querySelectorAll("#flt .chip").forEach(x=>x.classList.toggle("on",x===c));drawRadios()};
+  $("#flt").append(c);
+});
+$("#rq").oninput=drawRadios;
+
+function setNow(t,s){$("#bt").textContent=t;$("#bs").textContent=s}
+function markCur(){document.querySelectorAll(".item").forEach(i=>i.classList.toggle("cur",i.dataset.id===cur))}
+function closeVid(){try{if(YP&&YP.stopVideo)YP.stopVideo()}catch(e){}$("#vp").classList.add("hide")}
+function playGen(id,urls,title,sub){
+  closeVid();cur=id;markCur();setNow(title,"Chargement…");
+  const go=i=>{
+    if(cur!==id)return;
+    if(i>=urls.length){$("#bs").textContent="Flux indisponible, essaie une autre radio";return}
+    au.pause();au.onerror=()=>go(i+1);
+    au.src=urls[i];au.load();au.play().then(()=>{if(cur===id)$("#bs").textContent=sub}).catch(()=>{});
+  };
+  go(0);
+}
+
+function drawRadios(){
+  const q=$("#rq").value.toLowerCase(),box=$("#rl");box.textContent="";
+  const base=grp==="FAV"?favs:ST,f=GR[grp]||GR.ALL;
+  const list=base.filter(s=>f(s)&&(s.name+" "+s.tag).toLowerCase().includes(q));
+  if(!list.length){box.append(el("div","msg",grp==="FAV"?"Aucun favori. Appuie sur ☆ à côté d’une radio.":"Aucune radio trouvée. Appuie sur Entrée pour chercher dans l’annuaire."));return}
+  list.slice(0,300).forEach(r=>{
+    const it=el("div","item"+(cur===r.id?" cur":""));it.dataset.id=r.id;
+    it.append(el("div","cov",r.cc||"🌍"));
+    const inf=el("div","inf");inf.append(el("b",0,r.name),el("small",0,r.tag+(r.cc==="FR"?" · France":r.cc==="BE"?" · Belgique":"")));
+    const fv=favs.some(x=>x.id===r.id);
+    const b=el("button","ib"+(fv?" liked":""),fv?"★":"☆");b.setAttribute("aria-label","Favori");
+    b.onclick=e=>{e.stopPropagation();favs=fv?favs.filter(x=>x.id!==r.id):[...favs,r];saveFav();drawRadios()};
+    it.onclick=()=>playGen(r.id,r.urls,r.name,"En direct · "+r.tag);
+    it.append(inf,b);box.append(it);
+  });
+  if(list.length>300)box.append(el("div","msg","Affine la recherche pour voir les "+(list.length-300)+" autres radios."));
+}
+
+const SRV=["https://de1.api.radio-browser.info","https://fr1.api.radio-browser.info","https://nl1.api.radio-browser.info","https://at1.api.radio-browser.info"];
+async function api(path){for(const s of SRV){try{const r=await fetch(s+"/json/"+path);if(r.ok)return await r.json()}catch(e){}}throw new Error("api")}
+const conv=x=>({id:"u:"+x.stationuuid,name:(x.name||"").trim(),cc:x.countrycode||"",tag:(x.tags||"").split(",").filter(Boolean).slice(0,2).join(", ")||"Radio",
+  urls:[x.url_resolved,x.url].filter(Boolean).filter(u=>location.protocol!=="https:"||u.startsWith("https"))});
+function merge(arrs){
+  const seen=new Set(),out=[];
+  arrs.flat().map(conv).forEach(s=>{const k=s.name.toLowerCase()+s.cc;if(s.name&&s.urls.length&&!seen.has(k)){seen.add(k);out.push(s)}});
+  return out;
+}
+async function loadAll(){
+  $("#rl").append(el("div","msg","Chargement des radios…"));
+  const b="hidebroken=true&order=clickcount&reverse=true";
+  const qs=["stations/search?countrycode=FR&"+b+"&limit=700","stations/search?countrycode=BE&"+b+"&limit=700",
+    "stations/byname/tomorrowland?hidebroken=true","stations/byname/one%20world%20radio?hidebroken=true","stations/search?name=nrj&countrycode=BE&hidebroken=true"];
+  const r=await Promise.allSettled(qs.map(api));
+  const m=merge(r.filter(x=>x.status==="fulfilled").map(x=>x.value));
+  if(m.length>20)ST=m;
+  drawRadios();
+  if(m.length<=20){const w=el("div","msg","⚠️ L’annuaire complet des radios est inaccessible ici (liste réduite). Ouvre ce fichier dans Chrome ou Firefox, depuis tes Téléchargements, et non dans l’aperçu de Claude.");$("#rl").prepend(w)}
+}
+$("#rq").addEventListener("keydown",async e=>{
+  if(e.key!=="Enter")return;const q=e.target.value.trim();if(q.length<2)return;
+  const r=await Promise.allSettled(["FR","BE"].map(c=>api("stations/search?name="+encodeURIComponent(q)+"&countrycode="+c+"&hidebroken=true&limit=100")).concat(api("stations/byname/"+encodeURIComponent(q)+"?hidebroken=true&limit=50")));
+  const m=merge(r.filter(x=>x.status==="fulfilled").map(x=>x.value)),ids=new Set(ST.map(s=>s.id));
+  ST=ST.concat(m.filter(s=>!ids.has(s.id)));drawRadios();
+});
+
+const LS={g:k=>{try{return localStorage.getItem(k)||""}catch(e){return ""}},s:(k,v)=>{try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}};
+likes=likes.map(t=>t.vid?{p:"yt",type:"video",id:t.vid,title:t.title,sub:t.artist}:t);
+const kid=t=>t.p?t.p+":"+t.id:t.id,ICON={yt:"▶",spotify:"🎧",sc:"☁"};
+function isLiked(t){return likes.some(l=>kid(l)===kid(t))}
+function trackRow(t,rerender,inLikes){
+  const it=el("div","item"+(cur===kid(t)?" cur":""));it.dataset.id=kid(t);
+  it.append(el("div","cov",t.p?ICON[t.p]:"♪"));
+  const inf=el("div","inf");inf.append(el("b",0,t.title||"Sans titre"),el("small",0,t.sub||t.artist||""));
+  const h=el("button","ib"+(isLiked(t)?" liked":""),isLiked(t)?"♥":"♡");h.setAttribute("aria-label","Liker");
+  h.onclick=e=>{e.stopPropagation();if(isLiked(t))likes=likes.filter(l=>kid(l)!==kid(t));else likes.unshift(t);save();rerender()};
+  it.onclick=()=>{Q=inLikes?likes.filter(x=>x.p==="yt"&&x.type==="video"):null;t.p?playEmb(t):playGen(t.id,[t.url],t.title,t.artist)};
+  it.append(inf,h);return it;
+}
+function drawLikes(){
+  const box=$("#ll");box.textContent="";
+  if(!likes.length){box.append(el("div","msg","Aucun titre liké pour l’instant. Appuie sur ♡ dans l’onglet Musique."));return}
+  likes.forEach(t=>box.append(trackRow(t,drawLikes,true)));
+}
+/* ---- Lecteur YouTube intégré + file des titres likés ---- */
+let YP=null,YRDY=false,PEND=null,YAPI=0,Q=null;
+function ytApi(cb){
+  if(window.YT&&YT.Player)return cb();
+  (ytApi.q=ytApi.q||[]).push(cb);if(YAPI)return;YAPI=1;
+  window.onYouTubeIframeAPIReady=()=>{const q=ytApi.q;ytApi.q=[];q.forEach(f=>f())};
+  const sc=document.createElement("script");sc.src="https://www.youtube.com/iframe_api";document.head.append(sc);
+}
+function nextTrack(){
+  if(!Q||Q.length<2)return;
+  const i=Q.findIndex(x=>kid(x)===cur);playEmb(Q[i+1]||Q[0]);
+}
+function playEmb(t){
+  if(t.p!=="yt"||t.type!=="video")return;
+  au.pause();cur=kid(t);markCur();setNow(t.title||"Lecture",t.sub||"");
+  $("#vp").classList.remove("hide");$("#vl").href="https://www.youtube.com/watch?v="+t.id;
+  ytApi(()=>{
+    if(YP&&YRDY){YP.loadVideoById(t.id);return}
+    PEND=t.id;if(YP)return;
+    YP=new YT.Player("vf",{width:"100%",videoId:t.id,playerVars:{playsinline:1,rel:0,autoplay:1},events:{
+      onReady:()=>{YRDY=true;if(PEND&&PEND!==t.id)YP.loadVideoById(PEND)},
+      onStateChange:e=>{if(e.data===0)nextTrack()},
+      onError:()=>{setTimeout(nextTrack,800)}
+    }});
+  });
+}
+const say=m=>{const b=$("#sl");b.textContent="";b.append(el("div","msg",m))};
+async function searchYouTube(q){
+  const key=LS.g("ytkey");if(!key)return{err:"nokey"};
+  try{
+    const r=await fetch("https://www.googleapis.com/youtube/v3/search?"+new URLSearchParams({part:"snippet",type:"video",videoEmbeddable:"true",videoCategoryId:"10",maxResults:"10",q,key}));
+    const j=await r.json();
+    if(!r.ok){return{err:(j.error&&j.error.errors&&j.error.errors[0]&&j.error.errors[0].reason)||String(r.status)}}
+    return{items:(j.items||[]).filter(x=>x.id&&x.id.videoId).map(x=>{const d=document.createElement("textarea");d.innerHTML=x.snippet.title;return{p:"yt",type:"video",id:x.id.videoId,title:d.value,sub:x.snippet.channelTitle||""}})};
+  }catch(e){return{err:"network"}}
+}
+/* ---- Recherche + connexions ---- */
+const ERR={badRequest:"clé invalide ou mal copiée. Réinitialise puis recolle la clé en entier (elle commence par AIza et fait environ 39 caractères).",forbidden:"accès refusé par Google : la clé a une restriction (site autorisé ou API). Dans Google Cloud > Identifiants > ta clé, mets « Aucune » en restriction d’application et autorise YouTube Data API v3, ou ouvre le site depuis l’adresse autorisée.",keyInvalid:"clé invalide",accessNotConfigured:"API YouTube Data v3 non activée pour cette clé",quotaExceeded:"quota du jour dépassé",network:"connexion impossible","403":"accès refusé (compte Spotify non autorisé dans l’application ?)","401":"session expirée, reconnecte-toi"};
+let res=[],note="";
+function drawResults(){const box=$("#sl");box.textContent="";if(note)box.append(el("p","note",note));res.forEach(t=>box.append(trackRow(t,drawResults)))}
+async function doSearch(q){
+  if(!LS.g("ytkey")){say("Ajoute ta clé YouTube dans « ⚙️ Clé YouTube » pour chercher de la musique.");return}
+  say("Recherche…");
+  const y=await searchYouTube(q);res=y.items||[];
+  note=y.err?"YouTube : "+(ERR[y.err]||y.err):"";
+  if(!res.length){say("Aucun résultat."+(note?" "+note:""));return}
+  drawResults();
+}
+$("#sq").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.value.trim())doSearch(e.target.value.trim())});
+function keyUI(){
+  const y=!!LS.g("ytkey");
+  $("#ykd").classList.toggle("hide",y);$("#ko").textContent=y?"✓ YouTube":"";$("#kr").classList.toggle("hide",!y);
+}
+$("#yk").onchange=e=>{LS.s("ytkey",e.target.value.trim());e.target.value="";keyUI()};
+$("#kr").onclick=e=>{e.preventDefault();LS.s("ytkey","");keyUI();$("#ykd").open=true};
+$("#vx").onclick=closeVid;
+keyUI();
+$("#pp").onclick=()=>{if(!au.src)return;au.paused?au.play().catch(()=>{}):au.pause()};
+au.onplay=()=>{$("#pp").textContent="⏸"};
+au.onpause=()=>{$("#pp").textContent="▶"};
+$("#vol").oninput=e=>{au.volume=e.target.value};au.volume=.8;
+favs=favs.filter(f=>f&&typeof f==="object");
+save();drawRadios();loadAll();
+</script>
+</body>
+</html>
